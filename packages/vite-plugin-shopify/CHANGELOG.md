@@ -1,5 +1,11 @@
 # vite-plugin-shopify
 
+## 69.0.1
+
+### Patch Changes
+
+- acf44f3: asdf
+
 ## 69.0.0
 
 ### Major Changes
