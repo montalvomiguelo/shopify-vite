@@ -1,5 +1,11 @@
 # vite-plugin-page-reload
 
+## 69.0.0
+
+### Major Changes
+
+- Testing 1 2 3
+
 ## 0.2.1
 
 ### Patch Changes
