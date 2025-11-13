@@ -10,7 +10,7 @@ import shopifyReactRefresh from './react-refresh'
 const vitePluginShopify = (options: Options = {}): Plugin[] => {
   const resolvedOptions = resolveOptions(options)
 
-  // ASDF
+  // QWER
   const plugins = [
     // Apply plugin for configuring Vite settings
     shopifyConfig(resolvedOptions),
