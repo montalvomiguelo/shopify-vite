@@ -1,5 +1,11 @@
 # vite-plugin-shopify
 
+## 69.0.2
+
+### Patch Changes
+
+- 89cf3f8: qwer
+
 ## 69.0.1
 
 ### Patch Changes
