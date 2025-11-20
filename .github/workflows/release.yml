@@ -11,6 +11,10 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # for creating releases
+      id-token: write # REQUIRED for npm trusted publishing via OIDC
+      pull-requests: write # for changesets to comment on PRs
     steps:
       - uses: actions/checkout@v4
 
@@ -35,4 +39,4 @@ jobs:
           publish: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
