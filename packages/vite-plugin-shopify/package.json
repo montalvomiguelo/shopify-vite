@@ -4,7 +4,7 @@
   "description": "Vite plugin providing integration for Shopify themes",
   "type": "module",
   "repository": {
-    "url": "barrel/shopify-vite",
+    "url": "montalvomiguelo/shopify-vite",
     "directory": "packages/vite-plugin-shopify"
   },
   "keywords": [
