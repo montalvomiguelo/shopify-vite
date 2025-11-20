@@ -1,5 +1,11 @@
 # vite-plugin-shopify
 
+## 69.0.3
+
+### Patch Changes
+
+- 36e5054: aaaa
+
 ## 69.0.2
 
 ### Patch Changes
