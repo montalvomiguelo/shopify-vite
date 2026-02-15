@@ -1,4 +1,12 @@
 <hello-world class="text-center max-w-7xl mx-auto p-16"></hello-world>
+<div class="flex justify-center">
+  {%- # Development route: __spritemap -%}
+  {%- comment -%}
+  <svg><use href="http://localhost:5173/__spritemap#sprite-icon-cart"/></svg>
+  {%- endcomment -%}
+  {%- # Production entry: spritemap.svg -%}
+  <svg><use href="{{ 'spritemap.bf20a43c.svg' | asset_url }}#sprite-icon-cart"/></svg>
+</div>
 
 {% schema %}
 {

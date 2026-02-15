@@ -59,6 +59,9 @@ importers:
       preact-custom-element:
         specifier: ^4.2.1
         version: 4.3.0(preact@10.26.4)
+      svgxuse:
+        specifier: ^1.2.6
+        version: 1.2.6
     devDependencies:
       '@preact/preset-vite':
         specifier: ^2.10.1
@@ -4219,6 +4222,9 @@ packages:
   supports-preserve-symlinks-flag@1.0.0:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
+
+  svgxuse@1.2.6:
+    resolution: {integrity: sha512-0KC0I24LDskC2vaVjUQfFmdtKJk8wFwMYOjCci0HlhBRSc0F86dZRqNBHf6BoS5bibQ7chgnBQWyJCTYkzVuSA==}
 
   table@6.9.0:
     resolution: {integrity: sha512-9kY+CygyYM6j02t5YFHbNz2FN5QmYGv9zAjVp4lCDjlCw7amdckXlEt/bjMhUIfj4ThGRE4gCUH5+yGnNuPo5A==}
@@ -8833,6 +8839,8 @@ snapshots:
       supports-color: 7.2.0
 
   supports-preserve-symlinks-flag@1.0.0: {}
+
+  svgxuse@1.2.6: {}
 
   table@6.9.0:
     dependencies:

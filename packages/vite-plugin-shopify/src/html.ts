@@ -274,7 +274,7 @@ const viteTagSnippetDev = (assetHost: string, entrypointsDir: string, reactPlugi
 <script src="${assetHost}/@id/__x00__vite-plugin-shopify:react-refresh" type="module"></script>`}${spritemapPlugin === undefined
   ? ''
   : `
-<script type="module" src="${assetHost}/@vite-plugin-svg-spritemap/client__spritemap"></script>`}
+<script type="module" src="${assetHost}/@vite-plugin-svg-spritemap/client"></script>`}
 <script src="${assetHost}/@vite/client" type="module"></script>${!themeHotReload
   ? ''
   : `
