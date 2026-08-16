@@ -11,17 +11,17 @@ import { ok } from '@shopify/cli-kit/node/result'
 vi.mock('@shopify/plugin-cloudflare/hooks/tunnel')
 
 const mockHttpServer = {
-  once: vi.fn((_, callback) => {
+  once: vi.fn((_: string, callback: () => void) => {
     callback()
   }),
-  on: vi.fn((_, callback) => {
+  on: vi.fn((_: string, callback: () => void) => {
     callback()
   }),
   address: vi.fn().mockReturnValue({ address: 'localhost', port: 5173 })
 } as unknown as http.Server
 
 const mockConfig: Partial<ResolvedConfig> = {
-  server: {} as any,
+  server: {} as unknown as ResolvedConfig['server'],
   plugins: [],
   resolve: {
     alias: [
@@ -30,10 +30,10 @@ const mockConfig: Partial<ResolvedConfig> = {
         replacement: 'test/__fixtures__/frontend'
       }
     ]
-  } as any,
+  } as unknown as ResolvedConfig['resolve'],
   logger: {
     info: vi.fn()
-  } as any
+  } as unknown as ResolvedConfig['logger']
 }
 
 const mockViteDevServer = vi.mocked<ViteDevServer>({
@@ -167,8 +167,6 @@ describe('vite-plugin-shopify:html', () => {
 
     const tagsHtml = await fs.readFile(path.join(__dirname, '__fixtures__', 'snippets', 'vite-tag.liquid'), { encoding: 'utf8' })
 
-    expect(mockViteDevServer.config.server.allowedHosts).toContain(new URL(mockResult.url).hostname)
-
     expect(tagsHtml).toMatchSnapshot()
 
     vi.useRealTimers()
@@ -178,7 +176,7 @@ describe('vite-plugin-shopify:html', () => {
     const options = resolveOptions({
       themeRoot: 'test/__fixtures__',
       sourceCodeDir: 'test/__fixtures__/frontend',
-      tunnel: 'https://123abc.ngrok.io:3000'
+      tunnel: 'https://123abc.ngrok.io'
     })
 
     vi.useFakeTimers()
@@ -190,8 +188,6 @@ describe('vite-plugin-shopify:html', () => {
     vi.advanceTimersByTime(100)
 
     const tagsHtml = await fs.readFile(path.join(__dirname, '__fixtures__', 'snippets', 'vite-tag.liquid'), { encoding: 'utf8' })
-
-    expect(mockViteDevServer.config.server.allowedHosts).toContain(new URL(options.tunnel).hostname)
 
     expect(tagsHtml).toMatchSnapshot()
 

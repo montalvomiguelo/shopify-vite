@@ -37,12 +37,7 @@ export default function shopifyHTML (options: Required<Options>): Plugin {
       }
     },
     configureServer ({ config, middlewares, httpServer }) {
-      const tunnelConfig = resolveTunnelConfig(options)
-
-      if (tunnelConfig.frontendPort !== -1) {
-        config.server.port = tunnelConfig.frontendPort
-        config.server.allowedHosts = [new URL(tunnelConfig.frontendUrl).hostname]
-      }
+      const { frontendUrl, frontendPort, usingLocalhost } = generateFrontendURL(options)
 
       httpServer?.once('listening', () => {
         const address = httpServer?.address()
@@ -55,7 +50,7 @@ export default function shopifyHTML (options: Required<Options>): Plugin {
             plugin.name === 'vite:react-babel' || plugin.name === 'vite:react-refresh'
           )
 
-          debug({ address, viteDevServerUrl, tunnelConfig })
+          debug({ address, viteDevServerUrl, frontendUrl, frontendPort, usingLocalhost })
 
           setTimeout(() => {
             void (async (): Promise<void> => {
@@ -63,9 +58,9 @@ export default function shopifyHTML (options: Required<Options>): Plugin {
                 return
               }
 
-              if (tunnelConfig.frontendUrl !== '') {
-                tunnelUrl = tunnelConfig.frontendUrl
-                isTTY() && renderInfo({ body: `${viteDevServerUrl} is tunneled to ${tunnelUrl}` })
+              if (frontendUrl !== '') {
+                tunnelUrl = frontendUrl
+                if (isTTY()) renderInfo({ body: `${viteDevServerUrl} is tunneled to ${tunnelUrl}` })
                 return
               }
 
@@ -76,8 +71,7 @@ export default function shopifyHTML (options: Required<Options>): Plugin {
               })
               tunnelClient = hook.valueOrAbort()
               tunnelUrl = await pollTunnelUrl(tunnelClient)
-              config.server.allowedHosts = [new URL(tunnelUrl).hostname]
-              isTTY() && renderInfo({ body: `${viteDevServerUrl} is tunneled to ${tunnelUrl}` })
+              if (isTTY()) renderInfo({ body: `${viteDevServerUrl} is tunneled to ${tunnelUrl}` })
               const viteTagSnippetContent = viteTagSnippetPrefix(config) + viteTagSnippetDev(
                 tunnelUrl, options.entrypointsDir, reactPlugin, options.themeHotReload
               )
@@ -88,8 +82,8 @@ export default function shopifyHTML (options: Required<Options>): Plugin {
           }, 100)
 
           const viteTagSnippetContent = viteTagSnippetPrefix(config) + viteTagSnippetDev(
-            tunnelConfig.frontendUrl !== ''
-              ? tunnelConfig.frontendUrl
+            frontendUrl !== ''
+              ? frontendUrl
               : viteDevServerUrl, options.entrypointsDir, reactPlugin, options.themeHotReload
           )
 
@@ -156,8 +150,10 @@ export default function shopifyHTML (options: Required<Options>): Plugin {
               imports.forEach((importFilename: string) => {
                 const chunk = manifest[importFilename]
                 const { css } = chunk
-                // Render preload tags for JS imports
-                tagsForEntry.push(preloadScriptTag(chunk.file, options.versionNumbers))
+                if (config.build.modulePreload !== false) {
+                  // Render preload tags for JS imports
+                  tagsForEntry.push(preloadScriptTag(chunk.file, options.versionNumbers))
+                }
 
                 // Render style tag for JS imports
                 if (typeof css !== 'undefined' && css.length > 0) {
@@ -210,7 +206,19 @@ const viteTagEntryPath = (
     }
   })
 
-  return `{% assign path = ${snippetName} | ${replacements.map(([from, to]) => `replace: '${from}/', '${to}/'`).join(' | ')} %}\n`
+  // Support both 'entry' (new, strict parser) and snippetName (old, backward compat)
+  const paramName = 'entry' // Fixed semantic name for new syntax
+
+  const replaceChain = replacements
+    .map(([from, to]) => `replace: '${from}/', '${to}/'`)
+    .join(' | ')
+
+  // Generate liquid that uses default filter for backward compatibility
+  return `{% liquid
+  assign ${paramName} = ${paramName} | default: ${snippetName}
+  assign path = ${paramName}${replaceChain ? ' | ' + replaceChain : ''}
+%}
+`
 }
 
 // Generate the asset's url with or without version numbers
@@ -295,13 +303,18 @@ function isIpv6 (address: AddressInfo): boolean {
   return address.family === 'IPv6' ||
     // In node >=18.0 <18.4 this was an integer value. This was changed in a minor version.
     // See: https://github.com/laravel/vite-plugin/issues/103
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error-next-line
+    // @ts-expect-error -- address.family was numeric (6/4) in Node 18.0–18.4
     address.family === 6
 }
 
-function resolveTunnelConfig (options: Required<Options>): FrontendURLResult {
-  let frontendPort = -1
+/**
+ * The tunnel creation logic depends on the tunnel option:
+ * - If tunnel is false, uses localhost
+ * - If tunnel is a string (custom URL), uses that URL
+ * - If tunnel is true, a tunnel is created (by default using cloudflare)
+ */
+function generateFrontendURL (options: Required<Options>): FrontendURLResult {
+  const frontendPort = -1
   let frontendUrl = ''
   let usingLocalhost = false
 
@@ -314,12 +327,7 @@ function resolveTunnelConfig (options: Required<Options>): FrontendURLResult {
     return { frontendUrl, frontendPort, usingLocalhost }
   }
 
-  const matches = options.tunnel.match(/(https:\/\/[^:]+):([0-9]+)/)
-  if (matches === null) {
-    throw new Error(`Invalid tunnel URL: ${options.tunnel}`)
-  }
-  frontendPort = Number(matches[2])
-  frontendUrl = matches[1]
+  frontendUrl = options.tunnel
   return { frontendUrl, frontendPort, usingLocalhost }
 }
 
@@ -329,11 +337,12 @@ function resolveTunnelConfig (options: Required<Options>): FrontendURLResult {
 async function pollTunnelUrl (tunnelClient: TunnelClient): Promise<string> {
   return await new Promise<string>((resolve, reject) => {
     let retries = 0
-    const pollTunnelStatus = async (): Promise<void> => {
+    const pollTunnelStatus = (): void => {
       const result = tunnelClient.getTunnelStatus()
       debug(`Polling tunnel status for ${tunnelClient.provider} (attempt ${retries}): ${result.status}`)
       if (result.status === 'error') {
-        return reject(result.message) // Changed AbortError to standard Error
+        reject(new Error(result.message))
+        return
       }
       if (result.status === 'connected') {
         resolve(result.url)
@@ -345,10 +354,10 @@ async function pollTunnelUrl (tunnelClient: TunnelClient): Promise<string> {
 
     const startPolling = (): void => {
       setTimeout(() => {
-        void pollTunnelStatus()
+        pollTunnelStatus()
       }, 500)
     }
 
-    void pollTunnelStatus()
+    pollTunnelStatus()
   })
 }
