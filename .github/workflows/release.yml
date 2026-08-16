@@ -27,7 +27,7 @@ jobs:
           node-version: 24
           registry-url: 'https://registry.npmjs.org'  # REQUIRED!
           cache: "pnpm"
-          
+
       - name: Install latest npm
         run: npm install -g npm@latest
 

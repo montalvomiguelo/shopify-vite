@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { Plugin, UserConfig, normalizePath } from 'vite'
+import { Plugin, UserConfig, normalizePath, type Alias } from 'vite'
 import glob from 'fast-glob'
 import createDebugger from 'debug'
 
@@ -45,18 +45,17 @@ export default function shopifyConfig (options: Required<Options>): Plugin {
         },
         resolve: {
           // Provide import alias to source code dir for convenience
-          alias: Array.isArray(config.resolve?.alias)
-            ? [
-                ...(config.resolve?.alias ?? []),
-                ...Object.keys(defaultAliases).map(alias => ({
-                  find: alias,
-                  replacement: defaultAliases[alias]
-                }))
-              ]
-            : {
-                ...defaultAliases,
-                ...config.resolve?.alias
-              }
+          alias: (() => {
+            const alias = config.resolve?.alias
+            const defaultAliasEntries = Object.entries(defaultAliases).map(([find, replacement]) => ({
+              find,
+              replacement
+            }))
+            if (Array.isArray(alias)) {
+              return [...(alias as Alias[]), ...defaultAliasEntries]
+            }
+            return { ...defaultAliases, ...alias }
+          })()
         },
         server: {
           host,
@@ -67,7 +66,26 @@ export default function shopifyConfig (options: Required<Options>): Plugin {
             ? false
             : {
                 ...(config.server?.hmr === true ? {} : config.server?.hmr)
-              }
+              },
+          allowedHosts: config.server?.allowedHosts ?? [
+            ...(typeof options.tunnel === 'string'
+              ? (() => {
+                  try {
+                    return [new URL(options.tunnel).hostname]
+                  } catch {
+                    throw new Error(`Invalid tunnel URL: ${options.tunnel}`)
+                  }
+                })()
+              : options.tunnel
+                ? ['.trycloudflare.com']
+                : [])
+          ],
+          cors: config.server?.cors ?? {
+            origin: config.server?.origin ?? [
+              /^https?:\/\/(?:(?:[^:]+\.)?localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/, // allows localhost (default)
+              /\.myshopify\.com$/ // allows myshopify.com URLs
+            ]
+          }
         }
       }
 
